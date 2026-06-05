@@ -48,7 +48,7 @@ async function scheduleReminder() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": "Basic ТВОЙ_REST_API_KEY" // Замени на свой REST API Key из OneSignal
+                "Authorization": "os_v2_app_elyewpzglvdg5lptfe77xp6jnqirthmsyexegq5sqchvqmxzsq6zxrdtwo6ezwwd3ussff52rubqaesjuuqazk5ab3hvfpvt6f3jmjy" // Замени на свой REST API Key из OneSignal
             },
             body: JSON.stringify({
                 app_id: "ТВОЙ_APP_ID_ИЗ_ONESIGNAL", // Замени на свой App ID из панели OneSignal
