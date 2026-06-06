@@ -1,17 +1,16 @@
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
 let currentOneSignalUserId = null;
-let rawInfoDebug = "Ничего не получено"; // Переменная для теста
 
+// Правильный колбэк для Legacy-режима Median
 window.median_onesignal_info = function(info) {
-    if (info) {
-        rawInfoDebug = JSON.stringify(info); // Сохраняем весь объект от Median
-        currentOneSignalUserId = info.subscriptionId || info.userId || null;
-    } else {
-        rawInfoDebug = "Объект info пустой или null";
+    if (info && info.oneSignalUserId) {
+        currentOneSignalUserId = info.oneSignalUserId;
+        console.log("Успешно получен Legacy ID устройства:", currentOneSignalUserId);
     }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+    // В Legacy-режиме Median дергает именно этот URL для получения инфы
     setTimeout(() => {
         if (window.median) {
             window.location.href = "median://onesignal/info?callback=median_onesignal_info";
@@ -20,9 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function scheduleReminder() {
-    // ВЫВОДИМ ДИАГНОСТИКУ ПРЯМО ПРИ НАЖАТИИ НА КНОПКУ
-    alert("Диагностика Median:\n" + rawInfoDebug + "\n\nПойманный ID: " + currentOneSignalUserId);
-
     try {
         const user = document.getElementById('userName')?.value?.trim() || "Игрок";
         const text = document.getElementById('remindText')?.value?.trim();
@@ -59,6 +55,7 @@ async function scheduleReminder() {
         const titleText = `Пора принять: ${text}`;
         const bodyText = `Напоминание для пользователя ${user}`;
 
+        // Если точечный ID еще не подтянулся, шлем пустую строку (бэкенд отправит на всех)
         const finalUserId = currentOneSignalUserId || "";
 
         const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
