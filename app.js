@@ -1,7 +1,6 @@
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
 let currentOneSignalUserId = null;
 
-// Глобальный колбэк для Median
 window.median_onesignal_info = function(info) {
     if (info && info.userId) {
         currentOneSignalUserId = info.userId;
@@ -9,7 +8,6 @@ window.median_onesignal_info = function(info) {
     }
 };
 
-// Запрашиваем инфо при старте
 document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         if (window.median) {
@@ -38,14 +36,12 @@ async function scheduleReminder() {
             return;
         }
 
-        // Если мы на ПК в Chrome — обычный таймер-заглушка
         if (!window.median) {
             alert(`Тест на ПК: сработает через ${Math.round(delay / 1000)} сек.`);
             setTimeout(() => { alert(`Пора принять: ${text}\nНапоминание для ${user}`); }, delay);
             return;
         }
 
-        // --- КОРРЕКТИРУЕМ ВРЕМЯ ПОД GMT+3 ---
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const day = String(targetDate.getDate()).padStart(2, '0');
@@ -57,12 +53,8 @@ async function scheduleReminder() {
         const titleText = `Пора принять: ${text}`;
         const bodyText = `Напоминание для пользователя ${user}`;
 
-        // УМНЫЙ ВЫБОР: Если ID нет, шлем "ALL" как временный режим для тестов
-        const finalUserId = currentOneSignalUserId || "ALL";
-
-        if (finalUserId === "ALL") {
-            console.log("Внимание: Пуш-плагин не активен в APK. Включен демонстрационный режим отправки.");
-        }
+        // Если пуш-модуль пустой, отправляем просто пустую строку, чтобы не ломать UUID
+        const finalUserId = currentOneSignalUserId || "";
 
         const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
             method: "POST",
@@ -80,11 +72,7 @@ async function scheduleReminder() {
         const resData = await response.json();
 
         if (response.ok) {
-            if (finalUserId === "ALL") {
-                alert(`Успешно (Демо-режим): Напоминание создано на ${hours}:${minutes}.\n\nЗаписка: Пересоберите APK с включенным плагином OneSignal для персональных уведомлений.`);
-            } else {
-                alert(`Ура! Напоминание успешно создано на ${hours}:${minutes}.`);
-            }
+            alert(`Ура! Напоминание успешно создано на ${hours}:${minutes}.`);
         } else {
             alert(`Сервер Render вернул ошибку: ${resData.error || response.statusText}`);
         }
