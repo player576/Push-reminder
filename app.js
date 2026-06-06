@@ -1,15 +1,13 @@
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
 let currentOneSignalUserId = null;
+let rawInfoDebug = "Ничего не получено"; // Переменная для теста
 
-// Универсальный колбэк, который поймет любое поколение SDK OneSignal в Median
 window.median_onesignal_info = function(info) {
     if (info) {
-        // Проверяем сначала новый subscriptionId (для SDK v5+), а если его нет - старый userId
+        rawInfoDebug = JSON.stringify(info); // Сохраняем весь объект от Median
         currentOneSignalUserId = info.subscriptionId || info.userId || null;
-        
-        if (currentOneSignalUserId) {
-            console.log("Успешно зацепили пуш-токен устройства:", currentOneSignalUserId);
-        }
+    } else {
+        rawInfoDebug = "Объект info пустой или null";
     }
 };
 
@@ -22,6 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function scheduleReminder() {
+    // ВЫВОДИМ ДИАГНОСТИКУ ПРЯМО ПРИ НАЖАТИИ НА КНОПКУ
+    alert("Диагностика Median:\n" + rawInfoDebug + "\n\nПойманный ID: " + currentOneSignalUserId);
+
     try {
         const user = document.getElementById('userName')?.value?.trim() || "Игрок";
         const text = document.getElementById('remindText')?.value?.trim();
