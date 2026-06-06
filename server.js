@@ -17,18 +17,20 @@ app.post('/api/remind', async (req, res) => {
     try {
         const { title, body, send_after, userId } = req.body;
 
-        if (!userId) {
-            return res.status(400).json({ error: "Не передан уникальный ID устройства (userId)" });
-        }
-
         const notificationBody = {
             app_id: APP_ID,
             headings: { "ru": title, "en": title },
             contents: { "ru": body, "en": body },
             send_after: send_after,
-            android_visibility: 1,
-            include_subscription_ids: [userId] // Шлем пуш только на этот ID
+            android_visibility: 1
         };
+
+        // ЖЕСТКАЯ ПРОВЕРКА: Если ID пустой, неопределен, или равен "" — шлем по сегменту
+        if (!userId || userId === "" || userId === "ALL") {
+            notificationBody.included_segments = ["Total Subscriptions"];
+        } else {
+            notificationBody.include_subscription_ids = [userId];
+        }
 
         const response = await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
