@@ -1,33 +1,4 @@
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
-let currentOneSignalUserId = null;
-
-function getOneSignalId() {
-    return new Promise((resolve) => {
-        try {
-            if (window.median && window.median.onesignal) {
-                window.median.onesignal.getRegistrationInfo((info) => {
-                    if (info && info.userId) {
-                        currentOneSignalUserId = info.userId;
-                        resolve(info.userId);
-                    } else {
-                        resolve(null);
-                    }
-                });
-            } else {
-                resolve(null);
-            }
-        } catch (e) {
-            alert("Ошибка инициализации Median: " + e.message);
-            resolve(null);
-        }
-    });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(async () => {
-        await getOneSignalId();
-    }, 1500);
-});
 
 async function scheduleReminder() {
     try {
@@ -49,11 +20,7 @@ async function scheduleReminder() {
             return;
         }
 
-        // Пытаемся получить ID устройства
-        if (!currentOneSignalUserId) {
-            await getOneSignalId();
-        }
-
+        // --- КОРРЕКТИРУЕМ ВРЕМЯ ПОД ТВОЙ GMT+3 ЧАСОВОЙ ПОЯС ---
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const day = String(targetDate.getDate()).padStart(2, '0');
@@ -65,42 +32,28 @@ async function scheduleReminder() {
         const titleText = `Пора принять: ${text}`;
         const bodyText = `Напоминание для пользователя ${user}`;
 
-        // Если мы внутри приложения
-        if (window.median) {
-            if (!currentOneSignalUserId) {
-                alert('ID устройства еще не загрузился от OneSignal. Подожди 3 сек и нажми еще раз!');
-                return;
-            }
+        // Мы убрали жесткую блокировку по ID устройства, теперь отправка сработает везде!
+        const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                title: titleText,
+                body: bodyText,
+                send_after: formattedDateForOneSignal,
+                userId: "ALL" // Передаем серверу сигнал "отправить всем подпискам"
+            })
+        });
 
-            alert("Отправляю запрос на Render..."); // Информационное окно, чтобы видеть, что кнопка сработала
-
-            const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    title: titleText,
-                    body: bodyText,
-                    send_after: formattedDateForOneSignal,
-                    userId: currentOneSignalUserId
-                })
-            });
-
-            if (response.ok) {
-                alert(`Ура! Сервер принял задачу на ${hours}:${minutes}.`);
-            } else {
-                const errData = await response.json();
-                alert(`Сервер Render ответил ошибкой: ${errData.error || response.statusText}`);
-            }
+        if (response.ok) {
+            alert(`Ура! Напоминание успешно создано на ${hours}:${minutes}.`);
         } else {
-            // Тест в обычном браузере
-            alert(`Тест на ПК: сработает через ${Math.round(delay / 1000)} сек.`);
-            setTimeout(() => { alert(`${titleText}\n${bodyText}`); }, delay);
+            const errData = await response.json();
+            alert(`Сервер Render ответил ошибкой: ${errData.error || response.statusText}`);
         }
 
     } catch (globalError) {
-        // Если код упадёт в любой точке — ты увидишь это окно!
         alert("Критическая ошибка в JS: " + globalError.message);
     }
-            }
+}
