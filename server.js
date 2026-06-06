@@ -17,9 +17,8 @@ app.post('/api/remind', async (req, res) => {
     try {
         const { title, body, send_after, userId } = req.body;
 
-        // Если это просто тест из обычного браузера на ПК
-        if (userId === "BROWSER_TEST") {
-            return res.status(200).json({ success: true, message: "Тест в браузере пройден успешно" });
+        if (!userId) {
+            return res.status(400).json({ error: "Не передан уникальный ID устройства (userId)" });
         }
 
         const notificationBody = {
@@ -28,8 +27,7 @@ app.post('/api/remind', async (req, res) => {
             contents: { "ru": body, "en": body },
             send_after: send_after,
             android_visibility: 1,
-            // Отправляем строго на ID конкретного девайса, который нажал кнопку!
-            include_subscription_ids: [userId] 
+            include_subscription_ids: [userId] // Шлем пуш только на этот ID
         };
 
         const response = await fetch("https://onesignal.com/api/v1/notifications", {
@@ -46,7 +44,7 @@ app.post('/api/remind', async (req, res) => {
         if (response.ok) {
             res.status(200).json(data);
         } else {
-            const errorText = data.errors ? JSON.stringify(data.errors) : "Неизвестная ошибка OneSignal";
+            const errorText = data.errors ? JSON.stringify(data.errors) : "Ошибка OneSignal";
             res.status(response.status).json({ error: errorText });
         }
     } catch (error) {
