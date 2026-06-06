@@ -1,10 +1,9 @@
-// НАСТРОЙКА: Вставь сюда адрес своего запущенного сервиса с Render
+// НАСТРОЙКА: Вставь сюда имя своего сервера из Render вместо "ДОМЕН_ТВОЕГО_СЕРВЕРА_НА_RENDER"
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
 
-// Переменная, куда запишется уникальный ID устройства для отправки пуша конкретному игроку
 let currentOneSignalUserId = null;
 
-// Автоматически запрашиваем ID пользователя у плагина Median при запуске приложения
+// При запуске приложения Median автоматически вытаскиваем ID этого устройства
 document.addEventListener("DOMContentLoaded", () => {
     if (window.median && window.median.onesignal) {
         window.median.onesignal.getRegistrationInfo((info) => {
@@ -21,7 +20,6 @@ async function scheduleReminder() {
     const text = document.getElementById('remindText')?.value?.trim();
     const timeVal = document.getElementById('remindTime')?.value;
 
-    // Валидация полей
     if (!text || !timeVal) {
         alert('Заполни, пожалуйста, что нужно сделать и выбери время! ⏰');
         return;
@@ -36,14 +34,22 @@ async function scheduleReminder() {
         return;
     }
 
-    // Текст уведомления
+    // --- КОРРЕКТИРУЕМ ВРЕМЯ ПОД ТВОЙ GMT+3 ЧАСОВОЙ ПОЯС ---
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    const hours = String(targetDate.getHours()).padStart(2, '0');
+    const minutes = String(targetDate.getMinutes()).padStart(2, '0');
+    
+    // Формируем строгий формат даты, который OneSignal поймет без искажений времени
+    const formattedDateForOneSignal = `${year}-${month}-${day} ${hours}:${minutes}:00 GMT+0300`;
+
     const titleText = `Пора принять: ${text}`;
     const bodyText = `Напоминание для пользователя ${user}`;
 
-    // Проверяем, открыто ли это в приложении или просто в обычном браузере
+    // Проверяем: запущены внутри приложения или просто в браузере Chrome
     if (window.median && currentOneSignalUserId) {
         try {
-            // Отправляем запрос на наш защищенный бэкенд на Render
             const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
                 method: "POST",
                 headers: {
@@ -52,23 +58,23 @@ async function scheduleReminder() {
                 body: JSON.stringify({
                     title: titleText,
                     body: bodyText,
-                    send_after: targetDate.toISOString(), // Переводим время в международный формат ISO
-                    userId: currentOneSignalUserId       // Отправляем пуш именно на этот планшет/смартфон
+                    send_after: formattedDateForOneSignal, // Шлем время с GMT+0300
+                    userId: currentOneSignalUserId
                 })
             });
 
             if (response.ok) {
-                alert(`Отлично! Напоминание успешно создано на сервере.`);
+                alert(`Отлично! Напоминание успешно создано на ${hours}:${minutes}.`);
             } else {
                 const errData = await response.json();
                 alert(`Сервер вернул ошибку: ${errData.error || response.statusText}`);
             }
         } catch (error) {
-            console.error("Ошибка сети при обращении к Render:", error);
-            alert("Не удалось связаться с сервером уведомлений. Проверь статус бэкенда на Render.");
+            console.error("Ошибка сети:", error);
+            alert("Не удалось связаться с сервером. Проверь статус бэкенда на Render.");
         }
     } else {
-        // Обычный фоллбэк таймера, если тестируешь сайт просто с компьютера через браузер
+        // Запасной таймер, если ты тестируешь сайт на ПК без приложения
         alert(`Тест в браузере: Напоминание сработает через ${Math.round(delay / 1000)} сек.`);
         setTimeout(() => {
             alert(`${titleText}\n${bodyText}`);
