@@ -1,7 +1,7 @@
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
 let currentOneSignalUserId = null;
 
-// Создаем глобальную функцию, которую Median сам вызовет и передаст туда ID
+// Глобальный колбэк для Median
 window.median_onesignal_info = function(info) {
     if (info && info.userId) {
         currentOneSignalUserId = info.userId;
@@ -9,11 +9,10 @@ window.median_onesignal_info = function(info) {
     }
 };
 
-// Как только страница загрузилась — даем команду Median вернуть нам инфо
+// Запрашиваем инфо при старте
 document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         if (window.median) {
-            // Специальная нативная команда Median для запроса данных OneSignal
             window.location.href = "median://onesignal/info?callback=median_onesignal_info";
         }
     }, 1500);
@@ -39,21 +38,14 @@ async function scheduleReminder() {
             return;
         }
 
-        // Если к моменту нажатия ID еще не подтянулся, пинаем Median еще раз
-        if (window.median && !currentOneSignalUserId) {
-            window.location.href = "median://onesignal/info?callback=median_onesignal_info";
-            alert('Регистрируем устройство в пуш-сети... Подожди 2 секунды и нажми кнопку еще раз! 🔄');
-            return;
-        }
-
-        // Если открыли на ПК в обычном браузере
+        // Если мы на ПК в Chrome — обычный таймер-заглушка
         if (!window.median) {
-            alert(`Тест на ПК (не в приложении): сработает через ${Math.round(delay / 1000)} сек.`);
+            alert(`Тест на ПК: сработает через ${Math.round(delay / 1000)} сек.`);
             setTimeout(() => { alert(`Пора принять: ${text}\nНапоминание для ${user}`); }, delay);
             return;
         }
 
-        // Форматируем время под твой GMT+3
+        // --- КОРРЕКТИРУЕМ ВРЕМЯ ПОД GMT+3 ---
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const day = String(targetDate.getDate()).padStart(2, '0');
@@ -65,7 +57,13 @@ async function scheduleReminder() {
         const titleText = `Пора принять: ${text}`;
         const bodyText = `Напоминание для пользователя ${user}`;
 
-        // Шлем запрос на Render строго с ID этого конкретного планшета!
+        // УМНЫЙ ВЫБОР: Если ID нет, шлем "ALL" как временный режим для тестов
+        const finalUserId = currentOneSignalUserId || "ALL";
+
+        if (finalUserId === "ALL") {
+            console.log("Внимание: Пуш-плагин не активен в APK. Включен демонстрационный режим отправки.");
+        }
+
         const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
             method: "POST",
             headers: {
@@ -75,14 +73,18 @@ async function scheduleReminder() {
                 title: titleText,
                 body: bodyText,
                 send_after: formattedDateForOneSignal,
-                userId: currentOneSignalUserId
+                userId: finalUserId
             })
         });
 
         const resData = await response.json();
 
         if (response.ok) {
-            alert(`Ура! Напоминание успешно создано на ${hours}:${minutes}.`);
+            if (finalUserId === "ALL") {
+                alert(`Успешно (Демо-режим): Напоминание создано на ${hours}:${minutes}.\n\nЗаписка: Пересоберите APK с включенным плагином OneSignal для персональных уведомлений.`);
+            } else {
+                alert(`Ура! Напоминание успешно создано на ${hours}:${minutes}.`);
+            }
         } else {
             alert(`Сервер Render вернул ошибку: ${resData.error || response.statusText}`);
         }
