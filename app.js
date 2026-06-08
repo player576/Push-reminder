@@ -1,22 +1,4 @@
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
-let currentOneSignalUserId = null;
-
-// Правильный колбэк для Legacy-режима Median
-window.median_onesignal_info = function(info) {
-    if (info && info.oneSignalUserId) {
-        currentOneSignalUserId = info.oneSignalUserId;
-        console.log("Успешно получен Legacy ID устройства:", currentOneSignalUserId);
-    }
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-    // В Legacy-режиме Median дергает именно этот URL для получения инфы
-    setTimeout(() => {
-        if (window.median) {
-            window.location.href = "median://onesignal/info?callback=median_onesignal_info";
-        }
-    }, 1500);
-});
 
 async function scheduleReminder() {
     try {
@@ -38,26 +20,20 @@ async function scheduleReminder() {
             return;
         }
 
-        if (!window.median) {
-            alert(`Тест на ПК: сработает через ${Math.round(delay / 1000)} сек.`);
-            setTimeout(() => { alert(`Пора принять: ${text}\nНапоминание для ${user}`); }, delay);
-            return;
-        }
-
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const day = String(targetDate.getDate()).padStart(2, '0');
         const hours = String(targetDate.getHours()).padStart(2, '0');
         const minutes = String(targetDate.getMinutes()).padStart(2, '0');
         
+        // Форматируем время отправки под формат OneSignal
         const formattedDateForOneSignal = `${year}-${month}-${day} ${hours}:${minutes}:00 GMT+0300`;
 
         const titleText = `Пора принять: ${text}`;
         const bodyText = `Напоминание для пользователя ${user}`;
 
-        // Если точечный ID еще не подтянулся, шлем пустую строку (бэкенд отправит на всех)
-        const finalUserId = currentOneSignalUserId || "";
-
+        // Отправляем пустой userId. Наш сервер увидит пустую строку и автоматически 
+        // переключит отправку на сегмент "Total Subscriptions" (на всех)
         const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
             method: "POST",
             headers: {
@@ -67,7 +43,7 @@ async function scheduleReminder() {
                 title: titleText,
                 body: bodyText,
                 send_after: formattedDateForOneSignal,
-                userId: finalUserId
+                userId: "" 
             })
         });
 
