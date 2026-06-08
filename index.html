@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "22f04b3f-265d-466e-adf3-293ffbfc96c",
+      safari_web_id: "web.onesignal.auto.11a76d30-e2a9-4f46-9be9-382fbd4a01f1",
+      notifyButton: {
+        enable: true,
+      },
+    });
+    // Сразу вешаем тег "Danil" при инициализации на Вебе
+    await OneSignal.User.addTag("username", "Danil");
+  });
+</script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Напоминалка</title>
