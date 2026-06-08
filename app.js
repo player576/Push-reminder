@@ -1,8 +1,19 @@
 const RENDER_BACKEND_URL = "https://push-reminder2.onrender.com";
 
+// Как только приложение открывается, вешаем тег "Danil" на планшет через Median JavaScript Bridge
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+        if (window.median) {
+            // Отправляем команду в Median, чтобы присвоить тег в OneSignal
+            window.location.href = "median://onesignal/sendTag?key=username&value=Danil";
+            console.log("Попытка отправить тег username=Danil в Median");
+        }
+    }, 1500);
+});
+
 async function scheduleReminder() {
     try {
-        const user = document.getElementById('userName')?.value?.trim() || "Игрок";
+        const user = document.getElementById('userName')?.value?.trim() || "Данил";
         const text = document.getElementById('remindText')?.value?.trim();
         const timeVal = document.getElementById('remindTime')?.value;
 
@@ -20,20 +31,26 @@ async function scheduleReminder() {
             return;
         }
 
+        // Если тестируешь на ПК в обычном браузере
+        if (!window.median) {
+            alert(`Тест на ПК: сработает через ${Math.round(delay / 1000)} сек.`);
+            setTimeout(() => { alert(`Пора принять: ${text}\nНапоминание для ${user}`); }, delay);
+            return;
+        }
+
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const day = String(targetDate.getDate()).padStart(2, '0');
         const hours = String(targetDate.getHours()).padStart(2, '0');
         const minutes = String(targetDate.getMinutes()).padStart(2, '0');
         
-        // Форматируем время отправки под формат OneSignal
+        // Форматируем время под формат OneSignal (Киевское время GMT+0300)
         const formattedDateForOneSignal = `${year}-${month}-${day} ${hours}:${minutes}:00 GMT+0300`;
 
         const titleText = `Пора принять: ${text}`;
         const bodyText = `Напоминание для пользователя ${user}`;
 
-        // Отправляем пустой userId. Наш сервер увидит пустую строку и автоматически 
-        // переключит отправку на сегмент "Total Subscriptions" (на всех)
+        // Шлем запрос на наш сервер Render
         const response = await fetch(`${RENDER_BACKEND_URL}/api/remind`, {
             method: "POST",
             headers: {
@@ -42,8 +59,7 @@ async function scheduleReminder() {
             body: JSON.stringify({
                 title: titleText,
                 body: bodyText,
-                send_after: formattedDateForOneSignal,
-                userId: "" 
+                send_after: formattedDateForOneSignal
             })
         });
 
