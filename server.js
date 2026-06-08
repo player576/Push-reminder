@@ -4,6 +4,7 @@ const app = express();
 
 app.use(express.json());
 
+// Разрешаем CORS, чтобы планшет мог достучаться до сервера
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -15,22 +16,20 @@ const APP_ID = process.env.ONE_SIGNAL_APP_ID;
 
 app.post('/api/remind', async (req, res) => {
     try {
-        const { title, body, send_after, userId } = req.body;
+        const { title, body, send_after } = req.body;
 
+        // Формируем запрос к OneSignal с жестким фильтром по твоему тегу
         const notificationBody = {
             app_id: APP_ID,
             headings: { "ru": title, "en": title },
             contents: { "ru": body, "en": body },
             send_after: send_after,
-            android_visibility: 1
+            android_visibility: 1,
+            // ФОКУС: Отправка строго на устройство с тегом username = Danil
+            filters: [
+                { "field": "tag", "key": "username", "relation": "=", "value": "Danil" }
+            ]
         };
-
-        // ЖЕСТКАЯ ПРОВЕРКА: Если ID пустой, неопределен, или равен "" — шлем по сегменту
-        if (!userId || userId === "" || userId === "ALL") {
-            notificationBody.included_segments = ["Total Subscriptions"];
-        } else {
-            notificationBody.include_subscription_ids = [userId];
-        }
 
         const response = await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
