@@ -11,7 +11,7 @@ app.use((req, res, next) => {
     next();
 });
 
-const REST_API_KEY = process.env.ONE_SIGNAL_REST_KEY;
+const REST_API_KEY = "os_v2_org_iriqeom6tzelxp3onv2zhtbrbnyvfrd526gume5c4d4r7xwwlotelxfk3x2qi7myssdvfn52ebrtq6zvxese46xvt24ijke67tappfq";
 const APP_ID = process.env.ONE_SIGNAL_APP_ID;
 
 app.post('/api/remind', async (req, res) => {
