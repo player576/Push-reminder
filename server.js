@@ -7,10 +7,10 @@ app.use(express.json());
 
 // --- НАСТРОЙКИ ONESIGNAL ---
 // 1. Вставь сюда свой App ID (тот же, что и в index.html)
-const APP_ID = "ТВОЙ_ОБНОВЛЕННЫЙ_ONE_SIGNAL_APP_ID";
+const APP_ID = "44510239-9e9e-48bb-bf6e-6d7593cc310b";
 
 // 2. Вставь сюда длинный Ключ Организации, который мы создали в "Keys & IDs"
-const REST_API_KEY = "ТВОЙ_КЛЮЧ_ОРГАНИЗАЦИИ_ИЗ_ПАНЕЛИ_ONESIGNAL"; 
+const REST_API_KEY = "os_v2_org_iriqeom6tzelxp3onv2zhtbrbp5jh6aus27u2i4iyujv3c2faztotkvgbgbsoraewzxjnkqp3xadik4cnuj264lpwvjiq2ghfx6qafa"; 
 
 
 // Маршрут для проверки, что сервер вообще живой
