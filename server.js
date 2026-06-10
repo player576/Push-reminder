@@ -40,7 +40,7 @@ app.post('/send-reminder', async (req, res) => {
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
                 // Используем "Basic" для личного REST API Key конкретного приложения!
-                "Authorization": `Basic ${REST_API_KEY}`
+                "Authorization": `Key ${REST_API_KEY}`
             },
             body: JSON.stringify(notificationBody)
         });
