@@ -2,23 +2,19 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-app.use(cors()); // CORS успешно работает с нашим новым package.json
+app.use(cors());
 app.use(express.json());
 
 // --- НАСТРОЙКИ ONESIGNAL ---
-// 1. Твой App ID приложения "Напоминалка"
 const APP_ID = "22f04b3f-265d-466e-adf3-80f08960fa23"; 
 
-// 2. Твой REST API Key приложения, который начинается на vcsvn...
-const REST_API_KEY = "os_v2_app_elyewpzglvdg5lptfe77xp6jnqnvypx6tgxusfmnddgsdchlsmuu22mvbdv7njwfordkzs74p5lqf4ioci2tri7ty25al7hsgqylmaq"; // ОБЯЗАТЕЛЬНО вставь сюда свой КЛЮЧ ПОЛНОСТЬЮ вместо звёздочек!
+// Вставь сюда свой полный ключ, который начинается на Os_v2_app_...
+const REST_API_KEY = "os_v2_app_elyewpzglvdg5lptfe77xp6jnqnvypx6tgxusfmnddgsdchlsmuu22mvbdv7njwfordkzs74p5lqf4ioci2tri7ty25al7hsgqylmaq"; 
 
-
-// Базовый маршрут для проверки работы сервера в браузере
 app.get('/', (req, res) => {
-    res.send('Сервер напоминаний запущен и готов к отправке пушей через Basic!');
+    res.send('Сервер готов к отправке пушей через двойную авторизацию!');
 });
 
-// Главный маршрут для обработки нажатия кнопки на планшете
 app.post('/send-reminder', async (req, res) => {
     const { message } = req.body;
 
@@ -26,7 +22,6 @@ app.post('/send-reminder', async (req, res) => {
         return res.status(400).json({ error: "Поле 'message' обязательно" });
     }
 
-    // Формируем запрос к OneSignal для отправки всем подписанным
     const notificationBody = {
         app_id: APP_ID,
         included_segments: ["All Subscribed Users"],
@@ -39,8 +34,9 @@ app.post('/send-reminder', async (req, res) => {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                // Используем "Basic" для личного REST API Key конкретного приложения!
-                "Authorization": `Key ${REST_API_KEY}`
+                // Отправляем оба варианта! OneSignal сам выберет тот, который ему нужен
+                "Authorization": `Key ${REST_API_KEY}`,
+                "X-Authorization": `Basic ${REST_API_KEY}`
             },
             body: JSON.stringify(notificationBody)
         });
@@ -49,19 +45,20 @@ app.post('/send-reminder', async (req, res) => {
 
         if (!response.ok) {
             console.error("Ошибка OneSignal API:", data);
-            return res.status(response.status).json({ error: data.errors || data });
+            // Возвращаем подробную ошибку от OneSignal прямо в приложение!
+            return res.status(response.status).json({ 
+                error: data.errors ? JSON.stringify(data.errors) : JSON.stringify(data) 
+            });
         }
 
-        console.log("Уведомление успешно отправлено!", data);
         return res.json({ success: true, details: data });
 
     } catch (error) {
         console.error("Внутренняя ошибка сервера:", error);
-        return res.status(500).json({ error: "Внутренняя ошибка сервера: " + error.message });
+        return res.status(500).json({ error: "Ошибка сервера: " + error.message });
     }
 });
 
-// Запуск приложения на порту Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Сервер успешно работает на порту ${PORT}`);
