@@ -10,7 +10,7 @@ app.use(express.json());
 const APP_ID = "22f04b3f-265d-466e-adf3-80f08960fa23"; 
 
 // 2. Твой REST API Key приложения, который начинается на vcsvn...
-const REST_API_KEY = "vcsvn7suxevvnajbi2bhxt6pu"; // ОБЯЗАТЕЛЬНО вставь сюда свой КЛЮЧ ПОЛНОСТЬЮ вместо звёздочек!
+const REST_API_KEY = "os_v2_app_elyewpzglvdg5lptfe77xp6jnqnvypx6tgxusfmnddgsdchlsmuu22mvbdv7njwfordkzs74p5lqf4ioci2tri7ty25al7hsgqylmaq"; // ОБЯЗАТЕЛЬНО вставь сюда свой КЛЮЧ ПОЛНОСТЬЮ вместо звёздочек!
 
 
 // Базовый маршрут для проверки работы сервера в браузере
