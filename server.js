@@ -1,58 +1,68 @@
 const express = require('express');
-const fetch = require('node-fetch');
-const app = express();
+const cors = require('cors');
 
+const app = express();
+app.use(cors());
 app.use(express.json());
 
-// Разрешаем CORS, чтобы планшет мог достучаться до сервера
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
+// --- НАСТРОЙКИ ONESIGNAL ---
+// 1. Вставь сюда свой App ID (тот же, что и в index.html)
+const APP_ID = "ТВОЙ_ОБНОВЛЕННЫЙ_ONE_SIGNAL_APP_ID";
+
+// 2. Вставь сюда длинный Ключ Организации, который мы создали в "Keys & IDs"
+const REST_API_KEY = "ТВОЙ_КЛЮЧ_ОРГАНИЗАЦИИ_ИЗ_ПАНЕЛИ_ONESIGNAL"; 
+
+
+// Маршрут для проверки, что сервер вообще живой
+app.get('/', (req, res) => {
+    res.send('Сервер напоминаний работает и готов принимать пуши!');
 });
 
-const REST_API_KEY = "os_v2_org_iriqeom6tzelxp3onv2zhtbrbnyvfrd526gume5c4d4r7xwwlotelxfk3x2qi7myssdvfn52ebrtq6zvxese46xvt24ijke67tappfq";
-const APP_ID = process.env.ONE_SIGNAL_APP_ID;
+// Главный маршрут для отправки пуш-уведомлений
+app.post('/send-reminder', async (req, res) => {
+    const { message } = req.body;
 
-app.post('/api/remind', async (req, res) => {
+    if (!message) {
+        return res.status(400).json({ error: "Поле 'message' обязательно для заполнения" });
+    }
+
+    // Формируем тело запроса к API OneSignal
+    const notificationBody = {
+        app_id: APP_ID,
+        included_segments: ["All Subscribed Users"], // Шлём всем подписанным устройствам
+        headings: { "en": "Напоминалка", "ru": "Напоминалка" },
+        contents: { "en": message, "ru": message }
+    };
+
     try {
-        const { title, body, send_after } = req.body;
-
-        // Формируем запрос к OneSignal с жестким фильтром по твоему тегу
-        const notificationBody = {
-            app_id: APP_ID,
-            headings: { "ru": title, "en": title },
-            contents: { "ru": body, "en": body },
-            send_after: send_after,
-            android_visibility: 1,
-            // ФОКУС: Отправка строго на устройство с тегом username = Danil
-            filters: [
-                { "field": "tag", "key": "username", "relation": "=", "value": "Danil" }
-            ]
-        };
-
         const response = await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": `Basic ${REST_API_KEY}`
+                // Используем "Key" вместо "Basic" для общего ключа организации!
+                "Authorization": `Key ${REST_API_KEY}`
             },
             body: JSON.stringify(notificationBody)
         });
 
         const data = await response.json();
 
-        if (response.ok) {
-            res.status(200).json(data);
-        } else {
-            const errorText = data.errors ? JSON.stringify(data.errors) : "Ошибка OneSignal";
-            res.status(response.status).json({ error: errorText });
+        if (!response.ok) {
+            console.error("Ошибка от OneSignal API:", data);
+            return res.status(response.status).json({ error: data.errors || data });
         }
+
+        console.log("Пуш успешно отправлен через OneSignal:", data);
+        return res.json({ success: true, details: data });
+
     } catch (error) {
-        console.error("Ошибка на бэкенде:", error);
-        res.status(500).json({ error: error.message });
+        console.error("Внутренняя ошибка сервера при отправке:", error);
+        return res.status(500).json({ error: "Внутренняя ошибка сервера: " + error.message });
     }
 });
 
+// Запуск сервера на порту Render или локальном 3000
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Сервер успешно запущен на порту ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Сервер успешно запущен на порту ${PORT}`);
+});
