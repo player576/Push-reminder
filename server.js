@@ -10,7 +10,7 @@ app.use(express.json());
 const APP_ID = "22f04b3f-265d-466e-adf3-80f08960fa23"; // Взято из твоей ссылки в панели
 
 // 2. Вставь сюда Ключ Организации, который ты создал во вкладке Keys & IDs
-const REST_API_KEY = "ТВОЙ_КЛЮЧ_ОРГАНИЗАЦИИ_ИЗ_ПАНЕЛИ_ONESIGNAL"; 
+const REST_API_KEY = "os_v2_org_iriqeom6tzelxp3onv2zhtbrbn2xwq224sve34nbp3lsub7nu4sy62cvuslfzde2gv3c5fnwywk6xjdhzb3ihptjputsiy5xjjhgn2y"; 
 
 
 app.get('/', (req, res) => {
